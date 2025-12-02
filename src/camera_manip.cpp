@@ -20,12 +20,9 @@ public:
 
     // --- Constants ---
 private:
-    static constexpr double kMinDistance =
-        10.0; // Minimum camera-ground distance
-    static constexpr double kScrollInFactor = 0.8; // Zoom in multiplier
-    static constexpr double kScrollOutFactor = 1.25; // Zoom out multiplier
-    static constexpr double kPanScale =
-        1.5; // Pan speed scale per unit distance
+    static constexpr double kMinDistance = 10.0; // Minimum camera-ground distance
+    static constexpr double kScrollFactor = 0.8; // Zoom multiplier
+    static constexpr double kPanScale = 1; // Pan speed scale per unit distance
     static constexpr double kDenomEpsilon = 1e-3; // Ray/plane denom epsilon
     static constexpr double kTinyEpsilon2 = 1e-12; // Squared length epsilon
 
@@ -215,10 +212,10 @@ public:
                 switch (ea.getScrollingMotion())
                 {
                     case osgGA::GUIEventAdapter::SCROLL_UP:
-                        _distance *= kScrollInFactor;
+                        _distance *= kScrollFactor;
                         break;
                     case osgGA::GUIEventAdapter::SCROLL_DOWN:
-                        _distance *= kScrollOutFactor;
+                        _distance /= kScrollFactor;
                         break;
                     default: break;
                 }
