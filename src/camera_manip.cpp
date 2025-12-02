@@ -23,24 +23,6 @@ private:
     // --- Constants ---
     static constexpr double kMinDistance = 10.0; // Minimum camera-ground distance
     static constexpr double kScrollFactor = 0.8; // Zoom multiplier
-    static constexpr double kPanScale = 1; // Pan speed scale per unit distance
-    static constexpr double kDenomEpsilon = 1e-3; // Ray/plane denom epsilon
-    static constexpr double kTinyEpsilon2 = 1e-12; // Squared length epsilon
-
-    // --- Math helpers ---
-    static osg::Vec3d normalizeOr(const osg::Vec3d& v, const osg::Vec3d& fallback)
-    {
-        if (v.length2() <= kTinyEpsilon2) return fallback;
-        osg::Vec3d out = v;
-        out.normalize();
-        return out;
-    }
-
-    // Clamp distance to sane minimums.
-    void clampDistance()
-    {
-        if (_distance < kMinDistance) _distance = kMinDistance;
-    }
 
     // Reset center/distance to scene bounds when available, and compute fixed frame once.
     void resetFromBounds()
@@ -77,37 +59,14 @@ public:
     osg::Node* getNode() override { return _node.get(); }
     const osg::Node* getNode() const override { return _node.get(); }
 
-    void setByMatrix(const osg::Matrixd& matrix) override
-    {
-        const osg::Vec3d eye = matrix.getTrans();
-        osg::Vec3d lookDir(-matrix(2, 0), -matrix(2, 1), -matrix(2, 2));
-        lookDir = normalizeOr(lookDir, osg::Vec3d(0.0, 0.0, -1.0));
-
-        // Ray cast against fixed tangent plane at current center to find ground point.
-        const osg::Vec3d planeNormal = _fixedUp;
-        const double denom = lookDir * planeNormal;
-
-        if (std::abs(denom) > kDenomEpsilon)
-        {
-            const double t = ((_center - eye) * planeNormal) / denom;
-            if (t > 0.0)
-            {
-                _center = eye + lookDir * t; // intersection on ground
-                _distance = (eye - _center).length(); // camera altitude
-                clampDistance();
-                return;
-            }
-        }
-
-        // Fallback: keep tangent direction and place center below eye.
-        _center = eye - (planeNormal * 1000.0);
-        _distance = 1000.0;
-        clampDistance();
+    void setByMatrix(const osg::Matrixd& /*matrix*/) override
+    { 
+        // not needed for this manipulator
     }
 
-    void setByInverseMatrix(const osg::Matrixd& inv) override
+    void setByInverseMatrix(const osg::Matrixd& /*inv*/) override
     {
-        setByMatrix(osg::Matrixd::inverse(inv));
+        // not needed for this manipulator
     }
 
     osg::Matrixd getMatrix() const override
@@ -125,7 +84,7 @@ public:
     void home(double /*currentTime*/) override
     {
         resetFromBounds();
-        clampDistance();
+        _distance = std::max(_distance, kMinDistance);
     }
 
     void home(const osgGA::GUIEventAdapter&, osgGA::GUIActionAdapter&) override
@@ -151,9 +110,8 @@ public:
                 const float dx = x - _lastX;
                 const float dy = y - _lastY;
 
-                const double scale = _distance * kPanScale;
-                _center -= (_fixedEast * static_cast<double>(dx) * scale);
-                _center -= (_fixedNorth * static_cast<double>(dy) * scale);
+                _center -= (_fixedEast * static_cast<double>(dx) * _distance);
+                _center -= (_fixedNorth * static_cast<double>(dy) * _distance);
 
                 _lastX = x;
                 _lastY = y;
@@ -181,7 +139,7 @@ public:
                         break;
                     default: break;
                 }
-                clampDistance();
+                _distance = std::max(_distance, kMinDistance);
                 aa.requestRedraw();
                 return true;
             }
