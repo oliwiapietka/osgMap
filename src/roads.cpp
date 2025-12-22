@@ -438,10 +438,12 @@ osg::Node* process_roads(osg::Matrixd& ltw, const std::string& file_path)
     program->addBindAttribLocation("a_tangent", 6);
 
     // tekstury
+    std::string images_path = file_path + "/../data/images";
+
     std::cout << "Laduje tekstury..." << std::endl;
-    osg::StateSet* ssHighway = createTextureStateSet(program, file_path + "/highway_d.png", file_path + "/highway_n.png");
-    osg::StateSet* ssCity = createTextureStateSet(program, file_path + "/city_d.png", file_path + "/city_n.png");
-    osg::StateSet* ssPath = createTextureStateSet(program, file_path + "/path_d.png", file_path + "/path_n.png");
+    osg::StateSet* ssHighway = createTextureStateSet(program, images_path + "/highway_d.png", images_path + "/highway_n.png");
+    osg::StateSet* ssCity = createTextureStateSet(program, images_path + "/city_d.png", images_path + "/city_n.png");
+    osg::StateSet* ssPath = createTextureStateSet(program, images_path + "/path_d.png", images_path + "/path_n.png");
 
     std::cout << "Generuje geometrie drog..." << std::endl;
     RoadGeneratorVisitor generator(ssHighway, ssCity, ssPath);
